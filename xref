@@ -1,0 +1,598 @@
+#!/bin/env perl -w
+
+# Convert GNU (g)as H8S assembler source code to HTML+ECMAScript
+# ESC, F2 & F8 keys cancel, turn on & off features
+# This code is in the public domain.
+
+print '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" ' .
+      '"http://www.w3.org/TR/REC-html40/loose.dtd">' .
+      "\n<html><head><title>@{[join ' ', @ARGV]}</title>\n";
+
+print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=us-ascii\">\n";
+
+print <<\__EOJS__;
+<script type="text/javascript">
+
+help = {
+    "add":	"ADD binary",
+    "adds":	"ADD with Sign extension",
+    "addx":	"ADD with eXtend carry",
+    "and":	"AND logical",
+    "andc":	"AND Control register",
+    "band":	"Bit AND",
+    "bcc":	"Branch on Carry Clear (= high or same)",
+    "bclr":	"Bit CLeaR",
+    "bcs":	"Branch on Carry Set (= low)",
+    "beq":	"Branch on EQual",
+    "bf":	"Branch False (= never)",
+    "bge":	"Branch on Greater or Equal",
+    "bgt":	"Branch on Greater Than",
+    "bhi":	"Branch on HIgh",
+    "bhs":	"Branch on High or Same (= carry clear)",
+    "biand":	"Bit Invert AND",
+    "bild":	"Bit Invert LoaD",
+    "bior":	"Bit Invert inclusive OR",
+    "bist":	"Bit Invert STore",
+    "bixor":	"Bit Invert eXclusive OR",
+    "bld":	"Bit LoaD",
+    "ble":	"Branch on Less or Equal",
+    "blo":	"Branch on LOw (= carry set)",
+    "bls":	"Branch on Low or Same",
+    "blt":	"Branch on Less Than",
+    "bmi":	"Branch on MInus",
+    "bne":	"Branch on Not Equal",
+    "bnot":	"Bit NOT",
+    "bor":	"Bit inclusive OR",
+    "bpl":	"Branch on PLus",
+    "bra":	"BRanch Always (= true)",
+    "brn":	"BRanch Never (= false)",
+    "bset":	"Bit SET",
+    "bsr":	"Branch to SubRoutine",
+    "bst":	"Bit STore",
+    "bt":	"Branch True (= always)",
+    "btst":	"Bit TeST",
+    "bvc":	"Branch on oVerflow Clear",
+    "bvs":	"Branch on oVerflow Set",
+    "bxor":	"Bit eXclusive OR",
+    "clrmac":	"CLeaR MAC register",
+    "cmp":	"CoMPare",
+    "daa":	"Decimal Adjust Add",
+    "das":	"Decimal Adjust Subtract",
+    "dec":	"DECrement",
+    "divxs":	"DIVide eXtend as Signed",
+    "divxu":	"DIVide eXtend as Unsigned",
+    "eepmov":	"MOVe data to EEPROM",
+    "exts":	"EXTend as Signed",
+    "extu":	"EXTend as Unsigned",
+    "inc":	"INCrement",
+    "jmp":	"JuMP",
+    "jsr":	"Jump to SubRoutine",
+    "ldc":	"LoaD to Control register",
+    "ldm":	"LoaD to Multiple registers",
+    "ldmac":	"LoaD to MAC register",
+    "mac":	"Multiply and ACcumulate",
+    "mov":	"MOVe data",
+    "movfpe":	"MOVe From Peripheral with E clock",
+    "movtpe":	"MOVe To Peripheral with E clock",
+    "mulxs":	"MULtiply eXtend as Signed",
+    "mulxu":	"MULtiply eXtend as Unsigned",
+    "neg":	"NEGate (two's complement)",
+    "nop":	"No OPeration",
+    "not":	"NOT logical (one's complement)",
+    "or":	"inclusive OR logical",
+    "orc":	"inclusive OR Control register",
+    "pop":	"POP data (= mov @sp+, reg)",
+    "push":	"PUSH data (= mov reg, @-sp)",
+    "rotl":	"ROTate Left",
+    "rotr":	"ROTate Right",
+    "rotxl":	"ROTate with eXtend carry Left",
+    "rotxr":	"ROTate with eXtend carry Right",
+    "rte":	"ReTurn from Exception",
+    "rts":	"ReTurn from Subroutine",
+    "shal":	"SHift Arithmetic Left",
+    "shar":	"SHift Arithmetic Right",
+    "shll":	"SHift Logical Left",
+    "shlr":	"SHift Logical Right",
+    "sleep":	"SLEEP",
+    "stc":	"STore from Control register",
+    "stm":	"STore from Multiple registers",
+    "stmac":	"STore from MAC register",
+    "sub":	"SUBtract binary",
+    "subs":	"SUBtract with Sign extension",
+    "subx":	"SUBtract with eXtend carry",
+    "tas":	"Test And Set",
+    "trapa":	"TRAP Always",
+    "xor":	"eXclusive OR logical",
+    "xorc":	"eXclusive OR Control register",
+    ".align":	"ALIGN origin (.) to 2^expr boundary",
+    ".ascii":	"assemble ASCII string literal",
+    ".asciz":	"assemble ASCIi string literal ending with Zero-byte",
+    ".bss":	"change to uninitialized data segment (Block Started by Symbol)",
+    ".byte":	"assemble BYTE	(8 bit)",
+    ".data":	"change to DATA segment",
+    ".else":	"assemble ELSEwise",
+    ".elseif":	"ELSEwise assemble IF not zero",
+    ".endif":	"END conditional IF",
+    ".endm":	"END Macro definition",
+    ".endr":	"END Repeat",
+    ".error":	"print ERROR string to stderr, don't generate object file",
+    ".fill":	"FILL space with (zero-)bytes",
+    ".global":	"define as GLOBAL symbol",
+    ".globl":	"define as GLOBaL symbol",
+    ".h8300s":	"H8S/2600 advanced mode",
+    ".if":	"assemble IF not zero",
+    ".ifc":	"assemble IF equal strings (Compare)",
+    ".ifdef":	"assemble IF DEFined",
+    ".ifeq":	"assemble IF EQual to zero (= .if !)",
+    ".ifnc":	"assemble IF Not equal strings (Compare)",
+    ".ifndef":	"assemble IF Not DEFined",
+    ".include": "INCLUDE file",
+    ".irp":	"Indefinite RePeat",
+    ".irpc":	"Indefinite RePeat Character",
+    ".long":	"assemble LONG (32 bit)",
+    ".list":	"increment assembly LISTing counter",
+    ".macro":	"define MACRO",
+    ".nolist":	"decrement assembly LISTing counter",
+    ".octa":	"assemble 8 words (16 bytes)",
+    ".offset":	"change to absolute segment and set origin (.)",
+    ".org":	"set ORiGin (.)",
+    ".print":	"PRINT string to stdout",
+    ".psize":	"set Page's line and column SIZE for assembly listings",
+    ".purgem":	"PURGE Macro",
+    ".quad":	"assemble 4 words (8 bytes)",
+    ".section":	"change SECTION",
+    ".skip":	"fill space with (zero-)bytes",
+    ".space":	"fill SPACE with (zero-)bytes",
+    ".text":	"change to TEXT segment",
+    ".warning":	"print WARNING string to stderr",
+    ".word":	"assemble WORD (16 bit)"
+}
+
+div = flow = previous = preview = nl = name = null
+
+function movePreview(e) {
+    if (!preview) return
+    var x = e ? e.pageX : window.event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft,
+	y = e ? e.pageY : window.event.clientY + document.body.scrollTop  + document.documentElement.scrollTop
+    preview.style.left = x + 150 + "px"
+    preview.style.top  = y -  20 + "px"
+}
+
+function clearPreview() {
+    if (!preview) return
+    while (preview.firstChild)
+	preview.removeChild(preview.firstChild)
+}
+
+function clearHilit() {
+    if (!name) return
+    for (var a, i = 0; a = document.getElementById(i ? name + i : name); i--)
+	a.style.backgroundColor = ""
+}
+
+function off() {
+    this.style.display = "none"
+    clearPreview()
+}
+
+function offnext() {
+    this.nextSibling.style.display = "none"
+    clearPreview()
+}
+
+function on() {
+    this.style.display = ""
+}
+
+function o(e) { // <a onmouseover="o" onfocus="o" ... >
+    if (this.id) { // highlight symbols
+	clearHilit()
+	name = this.id.replace(/-\d+$/, "")
+	for (var a, i = 0; a = document.getElementById(i ? name + i : name); i--)
+	    a.style.backgroundColor = "yellow"
+
+	if (this.onmouseout == offnext)
+	    this.nextSibling.style.display = ""
+	else if (name == this.id && i < -2) {
+	    var s = document.createElement("span")
+	    if (i > -99) // arbitrary length limit
+		for (j = -2; j > i; j--) {
+		    s.appendChild(document.createTextNode("\xb7"))
+		    a = s.appendChild(document.createElement("a"))
+		    a.href = "#" + name + j
+		    a.onmouseover = a.onfocus = o
+		    a.appendChild(document.createTextNode(-j))
+		}
+	    else s.appendChild(document.createTextNode("\xb7..."))
+	    s.onmouseover = s.onfocus = on
+	    s.onmouseout  = s.onblur  = off
+	    this.parentNode.insertBefore(s, this.nextSibling)
+	    this.onmouseout = this.onblur = offnext
+	}
+
+    } else if (!this.title) { // tooltip
+	t = help[this.firstChild.data.toLowerCase().replace(/\s+|\.[bwl]\s*$/g, "")]
+	if (t) this.title = t
+    }
+
+    if (preview && (i = this.href.lastIndexOf("#")) >= 0) {
+	var c, j, p, l, pre = document.createElement("span")
+	p = l = document.getElementById(this.href.substring(i + 1))
+	pre.appendChild(l.cloneNode(true)).id = ""
+
+	// lines before and including target label
+	for (j = 3; j > 0 && (p = p.previousSibling); pre.insertBefore(c, pre.firstChild)) {
+	    if ((c = p.cloneNode(true)).id) c.id = ""
+	    if (c.data)
+		for (i = c.data.length; i >= 0 && (i = c.data.lastIndexOf(nl, i)) >= 0; i -= nl.length)
+		    if (--j <= 0) {
+			c.data = c.data.substring(i + nl.length)
+			break
+		    }
+	}
+	// lines after target label
+	for (j = 20; j > 0 && (l = l.nextSibling); pre.appendChild(c)) {
+	    if ((c = l.cloneNode(true)).id) c.id = ""
+	    if (c.data)
+		for (i = 0; (i = c.data.indexOf(nl, i)) >= 0; i += nl.length)
+		    if (--j <= 0) {
+			c.data = c.data.substring(0, i)
+			break
+		    }
+	}
+
+	clearPreview()
+	this.onmousemove = movePreview
+	if (!this.onmouseout) this.onmouseout = this.onblur = clearPreview
+	preview.appendChild(pre)
+    }
+}
+
+function togglePreview() {
+    if (preview) {
+	clearPreview()
+	preview = null
+	return
+    }
+    preview = document.getElementById("preview")
+    clearPreview()
+}
+
+function drawFlow() {
+    if (!previous) return
+
+    var top, height // currently visible area
+    if (window.innerHeight) {
+	top    = window.pageYOffset
+	height = window.innerHeight
+    } else if (document.documentElement) {
+	top    = document.documentElement.scrollTop
+	height = document.documentElement.clientHeight
+    } else {
+	top    = document.body.scrollTop
+	height = document.body.clientHeight
+    }
+
+    if (top == previous.top && height == previous.height) return
+    previous.top    = top
+    previous.height = height
+    var bot = top + height + 4
+    top -= 4 // account for edge offsets & arrows
+    if (flow[0].height != flow[0].offsetHeight) {
+	toggleFlow() // text size changed
+	toggleFlow() // recalculate all positions
+    }
+
+    // binary searches for first & last visible symbol
+    for (var i, l = -1, h = flow.length; h - l > 1; )
+	flow[i = l + h >>> 1].pos < top ? l = i : h = i
+    var t = h
+    for (var i, l = -1, h = flow.length; h - l > 1; )
+	flow[i = l + h >>> 1].pos > bot ? h = i : l = i
+    var b = l
+
+    if (t == previous.t && b == previous.b) return
+    previous.t = t
+    previous.b = b
+
+    // join edges with same target
+    var edge = {}
+    for (var f, i = b; i >= t; i--) {
+	if (/\b[bj]\b/.test((f = flow[i]).className)) {
+	    if (f.tgt && edge[f.tgt]) continue
+	    f.tgt = (f = document.getElementById(f.href.replace(/.*#/, ""))).pos
+	}
+	if (f.pos == undefined || edge[f.pos]) continue
+	var e = { top: f.pos, bot: f.pos, flow: [] }
+	for (var j = -1; s = document.getElementById(f.id + j); j--)
+	    if (/\b[bj]\b/.test(s.className)) {
+		s.tgt = f.pos
+		e.top = Math.min(e.top, s.pos)
+		e.bot = Math.max(e.bot, s.pos)
+		e.flow.push(s)
+	    }
+	if (e.flow.length == 0) continue
+	edge[f.pos] = e
+	// sort individual edges by length
+	e.flow.sort(function(a, b) { return Math.abs(a.pos - a.tgt) - Math.abs(b.pos - b.tgt) })
+    }
+
+    // sort joined edges by length
+    var level = []
+    for (var i in edge) (i = edge[i]).len = i.bot - i.top, level.push(i)
+    level.sort(function(a, b) { return a.len - b.len || a.top - b.top })
+
+    CHANGED: {
+	if (level.length != previous.level.length)
+	    break CHANGED
+	for (var i = 0; i < level.length; i++)
+	    if (level[i].flow[0].tgt != previous.level[i].flow[0].tgt)
+		break CHANGED
+	return
+    }
+    previous.level = level
+
+    // indent joined edge if collision
+    var maxlevel = 0
+    EDGE: for (var i = 0; i < level.length; i++) {
+	var f, e = level[i]
+	LEVEL: for (var l = 0; l < maxlevel; l++) {
+	    for (var j = 0; j < i; j++)
+		if ((f = level[j]).level == l)
+		    if (e.top < f.bot && e.bot > f.top)
+			continue LEVEL
+	    e.level = l
+	    continue EDGE
+	}
+	e.level = maxlevel++
+    }
+
+    var cont   = document.createElement("div")
+    var margin = parseInt(document.body.style.marginLeft)
+    var color  = [ "#000", "#aaa", "#c44", "#faa" ]
+
+    for (var i = 0; i < level.length; i++)
+	for (var j = level[i].flow.length - 1; j >= 0; j--) {
+	    var f = level[i].flow[j],
+		l = Math.max(1, margin - 9 * (level[i].level + 1)),
+		src = f.pos + 2, // edge offsets
+		tgt = f.tgt - 2,
+		d, s
+
+	    s = (d = cont.appendChild(document.createElement("div"))).style
+	    s.position        = "absolute"
+	    s.overflow        = "hidden"
+	    s.backgroundColor = color[(src >= tgt) << 1 | /\bb\b/.test(f.className)]
+	    s.top    = Math.min(src, tgt) + "px"
+	    s.left   = l + "px"
+	    s.width  = "1px"
+	    s.height = Math.abs(src - tgt) + "px"
+	    s = (d = cont.appendChild(d.cloneNode(true))).style
+	    s.top    = src + "px"
+	    s.width  = "6px"
+	    s.height = "1px"
+
+	    if (j == 0) { // target arrow
+		s = (d = cont.appendChild(d.cloneNode(true))).style
+		s.top    = tgt + "px"
+		s.width  = "7px"
+		s = (d = cont.appendChild(d.cloneNode(true))).style
+		s.top    = tgt - 1 + "px"
+		s.left   = l + 5 + "px"
+		s.width  = "1px"
+		s.height = "3px"
+		s = cont.appendChild(d.cloneNode(true)).style
+		s.top    = tgt - 2 + "px"
+		s.left   = l + 4 + "px"
+		s.height = "5px"
+	    }
+	}
+
+    if (div.firstChild) div.replaceChild(cont, div.firstChild)
+    else                div.appendChild(cont)
+}
+
+function toggleFlow() {
+    if (previous) {
+	while (div.firstChild) div.removeChild(div.firstChild)
+	document.body.style.marginLeft = ""
+	previous = null
+	return
+    }
+
+    if (!flow || flow[0].height != flow[0].offsetHeight) {
+	document.body.style.cursor = "wait"
+	window.status = "Computing flow positions..."
+	div = document.body.appendChild(document.createElement("div"))
+	flow = []
+	var a = document.getElementsByTagName("a")
+	for (var e, i = 0; i < a.length; i++)
+	    if (/\b[bjl]\b/.test((e = a[i]).className)) {
+		var pos = e.offsetHeight >>> 1
+		for (var f = e; f; f = f.offsetParent)
+		    pos += f.offsetTop
+		e.pos = pos
+		flow.push(e)
+	    }
+	flow[0].height = flow[0].offsetHeight
+	//window.status = "Sorting flow positions..."
+	//flow.sort(function(a, b) { return a.pos - b.pos })
+	document.body.style.cursor = window.status = ""
+    }
+
+    document.body.style.marginLeft = 8 * 9 + 2 + "px"
+    previous = { level: [] }
+    drawFlow()
+}
+
+window.onload = function() {
+    nl = document.getElementById("preview").lastChild.data.substring(1)
+    togglePreview()
+    toggleFlow()
+
+    document.body.style.cursor = "wait"
+    window.status = "Getting anchors..."
+    var a = document.getElementsByTagName("a")
+    window.status = "Registering event handlers..."
+    for (var i = 0; i < a.length; i++)
+	a[i].onmouseover = a[i].onfocus = o
+    document.body.style.cursor = window.status = ""
+
+    document.onkeydown = function(e) {
+	switch ((e || window.event).keyCode) {
+	    case  27: // ESC
+		clearPreview()
+		clearHilit()
+		break
+	    case 113: // F2
+		clearPreview()
+		toggleFlow()
+		break
+	    case 119: // F8
+		togglePreview()
+		break
+	}
+    }
+
+    if (document.documentElement && document.documentElement.addEventListener)
+	document.documentElement.addEventListener("scroll", drawFlow, false)
+    else
+	window.onscroll = drawFlow
+    setInterval(drawFlow, 500)
+}
+
+</script>
+__EOJS__
+
+#print "<style type=\"text/css\"><!--\nspan.c { font-style: italic; }\n--></style>\n";
+
+print "</head><body>" .
+      "<pre id=preview style=\"position: absolute;" .
+      " z-index: 10; background: #ffd; opacity: .85;" .
+      " filter: alpha(opacity = 85)\">&#32;\n" .
+      "</pre><pre>";
+
+$indent = 2;
+$level  = 0;
+$argv   = "-";
+
+# pass #1: read files and note all referenced symbols
+while (<>) {
+    if ($indent) {
+    	if (/^\s*\.(if|else|endif)/) {
+	    --$level if /^\s*\.(else|endif)/;
+	    $_ = " " x ($level * $indent) . $_;
+    	    $level++ if /^\s*\.(if|else)/;
+	} else {
+	    #$_ = "\t" . $_ ;
+	}
+    }
+    s/\s+$//;
+    if ($ARGV ne $argv) {
+    	$argv = $ARGV;
+	push @line, "$argv\0$_"; # hack #2a (prepend file name)
+    } else {
+	push @line, $_;
+    }
+    s/^\s*(?:reg|pin\s+\S+)\s+(\S+).*/$1/ ||	# special assignment macros
+    s/^\s*bit\s+(\S+)\s+(\S+).*/$1.$2/ ||	# special assignment macro
+    s/^\s*([\w.]+)(?::|\s*=).*/$1/ ||		# labels & assignments
+    s/^;(type\d\w|id)\s*=.*/$1/ || # hack #1a (force xref of certain comments)
+    next;
+    next if /^\D$/;				# ignore single-letter macros
+    s/^(\d+)$/ "l$1:" . ++$num{"1$1"} /e;	# local (number) labels
+    $symbolUse{"3$_"} = $symbol{$_} + 1 if $symbol{$_}--
+}
+
+# pass #2: parse and count (= assign unique id to) each referenced symbol
+# pass #3: parse and generate HTML
+for $pass (2..3) {
+    for $line (@line) {
+	$_ = $line;	# don't modify original line (need it in both passes)
+	$fid = $sp1 = $sym = $sp2 = $cmd = $sp3 = $nam = $cmt = "";
+	# "parse" line (simply shave off field after field, except for operands)
+	$fid = $1            if s/^(.*)\0//s; # hack #2b (extract file name)
+	$sp1 = $1            if s/^(;)((?:type\d\w|id)\s*=)/$2/; # hack #1b
+	$cmt = $1            if s/(\s*;.*)//;	# comment
+	$sp1 = $1            if s/^(\s+)//;	# preceding white space
+	$sym = $1, $sp2 = $2 if s/^([\w.]+)(:\s*|\s*(?==))//; # label/assignment
+	$cmd = $1, $sp3 = $2 if s/^([\w.]+|=)(\s*)//; # mnemonic/macro/directive
+	$lbl = $sym;
+
+	$sym =~ s/^(\d+)$/ "l$1:" . ++$num{$pass.$1} /e; # local (number) labels
+	if ($sym && defined $symbolUse{"2$sym"}) {
+	    $symbolDef{$pass.$sym} ||= "";
+	    $lbl = "<a id=$sym$symbolDef{$pass.$sym} " . ($sp2 =~ /^:/ && "class=l ") .
+	           "href=\"#$sym" . (!$symbolDef{$pass.$sym}-- && -1) . "\">$lbl</a>"
+	}
+
+	$class = "";
+	if ($cmd) {
+	    if (defined $macro{$pass.$cmd}) {
+		if ($cmd eq "b" && s/^([\w.]+)//) {
+		    $cmd = "<a>$cmd";
+		    $nam = "$1</a>"
+		} elsif ($cmd eq "reg" && s/^([\w.]+)//) {
+		    $nam = defined $symbolUse{"2$1"} ? "<a id=$1 href=\"#$1-1\">$1</a>" : $1
+		} elsif ($cmd eq "pin" && s/^([\w.]+\s+)([\w.]+)//) {
+		    $nam = defined $symbolUse{"2$2"} ? "<a id=$2 href=\"#$2-1\">$1$2</a>" : "$1$2"
+		} elsif ($cmd eq "bit" && s/^([\w.]+)(\s+)([\w.]+)//) {
+		    $nam = defined $symbolUse{"2$1.$3"} ? "<a id=$1.$3 href=\"#$1.$3-1\">$1$2$3</a>" : "$1$2$3"
+		} else {
+		    $cmd =~ s!(.+)!<a id=$1@{[--$macroUse{$pass.$1}]} href="#$1">$1</a>!
+		}
+	    } else {
+		if ($cmd eq ".macro" && s/^([\w.]+)//) {
+		    $nam = defined $macroUse{"2$1"} ? "<a id=$1 href=\"#$1-1\">$1</a>" : $1;
+		    --$macro{$pass.$1}
+		} elsif ($cmd eq ".purgem" && s/^([\w.]+)//) {
+		    $nam = "<a id=$1@{[--$macroUse{$pass.$1}]} href=\"#$1\">$1</a>";
+		    undef $macro{$pass.$1}
+		} elsif ($cmd eq ".include" && s!"(.+?)"!!) {
+		    $nam = qq!<span class=s>"<a href="#$1">$1</a>"</span>!;
+		} elsif ($cmd eq ".org" && /([\s\w\d.*+-]+)/) {
+		    ($addr = $1) =~ s/\s+//g;
+		    $sp3 = qq!<a id="$cmd-$addr">$sp3</a>!;
+		}
+		# conditional branch
+		$class = " class=b" if $cmd =~ /^b([cv][cs]|[gl][et]|[hl]s|eq|ne|hi|lo|mi|pl)$/;
+		# unconditional branch/direct jump
+		$class = " class=j" if $cmd =~ /^(bt|bra|jmp)$/ && !/@@/;
+		$cmd = "<a>$cmd</a>" unless $cmd eq "=";
+	    }
+	}
+
+	s/&/&amp;/g;
+	s/</&lt;/g;
+	unless ($cmd =~ /\.macro\b/ || s!(".*?")!<span class=s>$1</span>!g) {
+	    s!(\\?[\w.]+)! defined $symbol{$1} ?
+			"<a id=$1@{[--$symbolUse{$pass.$1}]}$class href=\"#$1\">$1</a>" : $1 !eg;
+	    s!\b((\d+)([bf]))\b! ($s = "l$2:" . ((($num{$pass.$2} || 0) + ($3 eq "f")))) && defined $symbol{$s} ?
+			"<a id=$s@{[--$symbolUse{$pass.$s}]}$class href=\"#$s\">$1</a>" : $1 !eg;
+	}
+	next if $pass < 3;
+
+	$cmt =~ s/&/&amp;/g;
+	$cmt =~ s/</&lt;/g;
+	$cmt =~ s/\bI2C\b/I&#178;C/g;
+	$cmt =~ s/([\x7f-\xff])/"&#".ord($1).";"/eg;
+	#$cmt =~ s!(\S.*)!<span class=c>$1</span>!;	# for comment style
+	if ($fid) {
+	    $fid =~ s/&/&amp;/g;
+	    $fid =~ s/</&lt;/g;
+	    $fid =~ s/"/&#34;/g;
+	    $sp1 = qq!<a id="$fid">$sp1</a>!;
+	}
+	push @html, "$sp1$lbl$sp2$cmd$sp3$nam$_$cmt\n"
+    }
+}
+
+# squeeze blank lines, replace ASCII line art
+$i = 0; for (@html) {
+    next if s!^\s*;\s*=+\s*$!</pre><hr><hr><pre>!;
+    next unless s!^\s*;\s*-+\s*$!</pre><hr><pre>!;
+    for ($j = $i; $html[++$j] =~ s/^\n$//;) {}
+    for ($j = $i; $html[--$j] =~ s/^\n$//;) {}
+} continue { $i++ }
+
+print @html, "</pre></body></html>\n"

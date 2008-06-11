@@ -1,0 +1,46 @@
+#!/bin/env perl -w
+
+# Preprocess using (g)as and create *.s files suitable to be processed again
+# This code is in the public domain.
+
+$ENV{'PATH'} .= ":.";
+$as = "h8300-coff-as";
+$src = $ARGV[0] || "ec.s";
+
+
+for $i (qw[1R/15 1R/62 1R/63 1R/66 1R/68 1R/69 1R/70 1R/71 1Y/24 1Y/26 1Y/27
+           1Y/28 1Y/29 70/24 70/26 70/27 70/28 76/12 76/14 76/15 76/16]) {
+    ($type, $id) = split /\//, $i;
+    $name = "${type}HT${id}WW";
+
+    $cmd = "$as --listing-cont-lines=0 -acl=ec.lst" .
+           " --defsym type$type=-1 --defsym id=$id -oec.o $src";
+    defined ($_ = `$cmd`) or die;
+    print;
+
+    open LST, "<ec.lst" or die "open ec.lst: $!";
+    open SRC, ">$name.s" or die "open $name.s: $!";
+    while (<LST>) {
+    	s/.*?\t//;
+	s/^\s*\.(if|els|endif|list).*//s unless /\.macro\b/../\.endm\b/;
+
+	s/^;((type$type)|(type\d\w))(\s*=\s*).*/$1.$4.($2 ? -1 : ' 0')/e;
+	s/^;(id\s*=\s*)(\d+)(.*)/$2 == $id && "$1$2$3"/es;
+	s/^;\sType\s\d\w:.*//s unless /^;\s*Type\s+$type:/;
+	s/^conf\b.*//s unless /^conf\s+$type\s+$id\b/;
+	s/^\s*\.conf\b.*//s;
+
+	print SRC;
+    }
+    close LST or die "close ec.lst: $!";
+
+    open LST, "<$src" or die "open $src: $!";
+    while (<LST>) {
+	last if /\.offset\b/;
+    }
+    print SRC <LST>;
+    close LST or die "close $src: $!";
+    close SRC or die "close $name.s: $!";
+}
+
+unlink qw(ec.o ec.lst);
